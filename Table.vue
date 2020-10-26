@@ -34,7 +34,7 @@
       v-if="isShowPagination"
       background
       layout="pager, sizes"
-      :page-sizes="[13, 26, 30, 50]"
+      :page-sizes="pageSizes"
       :page-size="pageSize"
       :total="originTableData.length"
       :current-page.sync="currentPage"
@@ -117,6 +117,8 @@ export default {
       () => getTableList()
     );
 
+    const pageSizes = computed(() => [props.propsPageSize, props.propsPageSize * 2, props.propsPageSize * 3, props.propsPageSize * 4])
+
     const getTableList = () => {
       const { originTableData, currentPage, pageSize } = state;
       state.data = state.originTableData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -130,6 +132,7 @@ export default {
 
     return {
       ...toRefs(state),
+      pageSizes,
       handleRowDblClick,
       handleSizeChange,
       handleChangeCurrentPage,
