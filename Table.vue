@@ -11,6 +11,7 @@
       :max-height="maxHeight"
       v-loading="loading"
       @row-dblclick="handleRowDblClick"
+      @filter-change="handleChangeFilter"
     >
       <el-table-column
         v-for="item in column"
@@ -20,6 +21,10 @@
         :label="item.label"
         :width="item.width"
         :fixed="item.fixed"
+        :sortable="item.sortable"
+        :column-key="item.value"
+        :filters="item.filter && getFilters(item.value)"
+        :filter-method="item.filter && getFilterData"
       >
         <template slot-scope="scope">
           <template v-if="isCustom">
@@ -97,12 +102,17 @@ export default {
       data: [],
       currentPage: 1,
       pageSize: props.propsPageSize,
+      filterObject: {},
+      paginationTotal: 0,
     });
     watch(
       () => props.tableData,
       value => {
         state.originTableData = value;
-        state.data = value.slice(0, state.pageSize);
+        state.paginationTotal = value.length;
+        state.data = value.slice((state.currentPage - 1) * state.pageSize, state.pageSize * state.currentPage);
+        state.filterObject = {};
+        table.value.clearFilter();
       }
     );
     watch(
@@ -129,6 +139,26 @@ export default {
     const handleChangeCurrentPage = currentPage => emit('on-change-current-page', currentPage);
 
     const handleSizeChange = currentPageSize => (state.pageSize = currentPageSize);
+    
+    const getFilters = value =>
+      [...new Set(state.data.map(item => item[value]))].filter(item => item).map(item => ({ text: item, value: item }));
+
+    const getFilterData = (value, row, column) => {
+      const property = column['property'];
+      return row[property] === value;
+    };
+
+    const handleChangeFilter = value => {
+      state.filterObject = { ...state.filterObject, ...value };
+      let originData = JSON.parse(JSON.stringify(state.originTableData));
+      Object.keys(state.filterObject).forEach(key => {
+        if (state.filterObject[key].length > 0) {
+          originData = originData.filter(item => state.filterObject[key].includes(item[key]));
+        }
+      });
+      state.data = originData.slice((state.currentPage - 1) * state.pageSize, state.pageSize * state.currentPage);
+      state.paginationTotal = originData.length;
+    };
 
     return {
       ...toRefs(state),
